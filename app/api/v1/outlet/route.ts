@@ -10,10 +10,6 @@ const isVercel = process.env.VERCEL === "1";
 interface Message {
   role: string;
   content: string;
-  info?: {
-    prompt_tokens?: number;
-    completion_tokens?: number;
-  };
 }
 
 interface ModelPrice {
@@ -113,13 +109,6 @@ export async function POST(req: Request) {
       inputTokens = totalTokens - outputTokens;
     }
 
-    // ----------- 新增逻辑开始 -----------
-    // 如果 modelId 中包含 "set" 且为按 token 计费，则为输入 tokens 额外加 4000（系统提示词）
-    if (modelId.includes("set") && modelPrice.per_msg_price < 0) {
-      inputTokens += 4000;
-    }
-    // ----------- 新增逻辑结束 -----------
-
     // Calculate total cost
     let totalCost: number;
     if (outputTokens === 0) {
@@ -142,7 +131,7 @@ export async function POST(req: Request) {
     // Get the pre-deducted cost when getting inlet
     const inletCost = getModelInletCost(modelId);
 
-    // The actual cost to be deducted = total cost - inletCost
+    // The actual cost to be deducted = total cost - pre-deducted cost
     const actualCost = totalCost - inletCost;
 
     // Get and update user balance
